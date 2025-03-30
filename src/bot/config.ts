@@ -3,8 +3,10 @@ const environment = process.env;
 const {
   BOT_TOKEN,
   BOT_USERNAME,
+  SENTRY_URL,
+  BOT_DROP_PENDING_UPDATES,
   NODE_ENV = "development",
-} = environment as { [key: string]: string | undefined };
+} = environment as { [key: string]: any | undefined };
 
 if (!BOT_TOKEN) {
   throw new Error("Provide telegram bot token in .env file");
@@ -15,12 +17,10 @@ const botInfo = {
   username: BOT_USERNAME,
 };
 
-const isDev = NODE_ENV === "development";
-const isProd = NODE_ENV !== "development";
-
 export default {
-  isDev,
-  isProd,
+  NODE_ENV,
   botInfo,
+  SENTRY_URL,
+  BOT_DROP_PENDING_UPDATES,
   ...environment,
 };
