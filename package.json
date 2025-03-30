@@ -12,6 +12,7 @@
   "dependencies": {
     "@sentry/cli": "^2.43.0",
     "@sentry/node": "^9.10.1",
+    "@vlad-yakovlev/telegram-md": "^2.0.0",
     "dotenv": "^16.4.7",
     "nodemon": "^3.1.9",
     "telegraf": "^4.16.3",
