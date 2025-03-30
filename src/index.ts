@@ -3,7 +3,6 @@ import * as dotenv from "dotenv";
 // Load environment variables from .env file
 dotenv.config();
 
-import { Context, Telegraf } from "telegraf";
 import * as winston from "winston";
 
 import config from "./bot/config";
@@ -11,59 +10,56 @@ import config from "./bot/config";
 import LogService from "./log";
 import DiContainer from "./injection";
 import SentryService from "./sentry";
-import bot from "./bot";
-import { Update } from "telegraf/types";
+import BotService from "./bot";
+
+var logger: winston.Logger;
+var sentry: SentryService;
+var bot: BotService;
 
 const di = DiContainer();
 
-async function main() {
+async function main(): Promise<void> {
   di.register("config", config);
-  di.register("logService", LogService("info", {}));
+  logger = LogService("info", { isDev: config.NODE_ENV === "development" });
+  di.register("logService", logger);
   di.register("sentryUrl", config.SENTRY_URL);
-  di.register(
-    "sentryService",
-    new SentryService(config.SENTRY_URL!, {
-      nodeEnv: config.NODE_ENV,
-      sentryTracesSampleRate: "1.0",
-    })
+  sentry = new SentryService(config.SENTRY_URL!, {
+    nodeEnv: config.NODE_ENV,
+    sentryTracesSampleRate: "1.0",
+  });
+  di.register("sentryService", sentry);
+
+  bot = new BotService(
+    {
+      information: {
+        token: config.botInfo.token,
+        username: config.botInfo.username!,
+      },
+      botDropPendingUpdates: config.BOT_DROP_PENDING_UPDATES,
+    },
+    logger,
+    sentry
   );
 
-  di.factory(
-    "bot",
-    async (logService, sentryService) =>
-      await bot(
-        {
-          information: {
-            token: config.botInfo.token,
-            username: config.botInfo.username!,
-          },
-          botDropPendingUpdates: config.BOT_DROP_PENDING_UPDATES,
-        },
-        logService,
-        sentryService
-      )
-  );
+  di.register("bot", bot);
 
-  di.get<Telegraf<Context<Update>>>("bot");
+  await bot.init();
 }
 
 main();
 
-const logger = di.get<winston.Logger>("logService");
-const sentry = di.get<SentryService>("sentryService");
-
 async function stopApplication(code?: number | undefined) {
-  const bot = di.get<Telegraf<Context<Update>>>("bot");
   logger.info("Stopping application...");
-  await Promise.allSettled([
-    sentry.close().then(() => logger.info("Sentry closed")),
-    bot.stop(),
-    logger.info("Bot stopped"),
-  ]);
-  logger.info("Application stopped");
+
+  await sentry.close();
+  logger.info("Sentry closed");
+
+  di.get<BotService>("bot").stop();
+  logger.warn("Bot stopped");
+
+  logger.warn("Application stopped");
   process.exit(code);
 }
-
 async function processError(error: Error) {
   logger.error(error.stack);
   sentry.captureException(error);
