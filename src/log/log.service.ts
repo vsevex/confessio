@@ -4,6 +4,11 @@ import "winston-daily-rotate-file";
 
 const logsDirectoryPath = path.join(__dirname, "..", "..", "..", "logs");
 
+const timezoned = () =>
+  new Date().toLocaleString("en-US", {
+    timeZone: "Asia/Baku",
+  });
+
 interface Config {
   ERROR_LOGS_MAX_SIZE?: string;
   ERROR_LOGS_MAX_DAYS?: string;
@@ -66,7 +71,10 @@ export default (
 
   const main = winston.createLogger({
     level: logLevelMain,
-    format: winston.format.timestamp(),
+    format: winston.format.combine(
+      winston.format.timestamp({ format: timezoned }),
+      winston.format.prettyPrint()
+    ),
     transports: [],
   });
 
