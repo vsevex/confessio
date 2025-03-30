@@ -1,5 +1,4 @@
-import { Context, Telegraf } from "telegraf";
-import { Update } from "telegraf/typings/core/types/typegram";
+import { Telegraf } from "telegraf";
 
 import unmatchedHandler from "./handlers/unmatched";
 import SentryService from "../sentry";
@@ -13,40 +12,53 @@ interface Config {
 }
 
 interface LogService {
-  main: {
-    info(message: string): void;
-    error(message: string): void;
-  };
+  info(message: string): void;
+  error(message: string): void;
 }
 
-export default async (
-  config: Config,
-  logService: LogService,
-  sentryService: SentryService
-): Promise<Telegraf> => {
-  const bot = new Telegraf(config.information.token);
+class BotService {
+  private bot: Telegraf;
 
-  bot.use(unmatchedHandler);
+  constructor(
+    private config: Config,
+    private logService: LogService,
+    private sentryService: SentryService
+  ) {
+    this.bot = new Telegraf(config.information.token);
+  }
 
-  await bot.telegram.deleteWebhook({
-    drop_pending_updates: !!config.botDropPendingUpdates,
-  });
+  /**
+   * Initialize and start the bot
+   */
+  async init(): Promise<Telegraf> {
+    this.bot.use(unmatchedHandler);
 
-  bot
-    .launch()
-    .then(() =>
-      logService.main.info(`Bot "${config.information.username}" started`)
-    )
-    .catch((error: Error) => {
-      logService.main.error(error.stack || "Unknown error");
+    await this.bot.telegram.deleteWebhook({
+      drop_pending_updates: !!this.config.botDropPendingUpdates,
     });
 
-  bot.catch((err: unknown, ctx: Context<Update>) => {
-    const error = err as Error; // cast the unknown error to Error type
+    await this.bot
+      .launch(() =>
+        this.logService.info(
+          `Bot "${this.config.information.username}" started`
+        )
+      )
+      .catch((error: Error) => {
+        this.logService.error(error.stack || "Unknown error");
+      });
 
-    logService.main.error(error.stack || "Unknown error");
-    sentryService.captureException(error);
-  });
+    this.bot.catch((err: unknown) => {
+      const error = err as Error;
+      this.logService.error(error.stack || "Unknown error");
+      this.sentryService.captureException(error);
+    });
 
-  return bot;
-};
+    return this.bot;
+  }
+
+  stop(): void {
+    this.bot.stop();
+  }
+}
+
+export default BotService;
