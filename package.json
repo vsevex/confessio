@@ -6,12 +6,17 @@
   "author": "Vsevolod V. Melyukov",
   "main": "./src/index.ts",
   "scripts": {
-    "start": "nodemon --experimental-specifier-resolution=node ./src/index.ts"
+    "start": "nodemon --experimental-specifier-resolution=node ./src/index.ts",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org dosy --project confessio ./build && sentry-cli sourcemaps upload --org dosy --project confessio ./build"
   },
   "dependencies": {
+    "@sentry/cli": "^2.43.0",
+    "@sentry/node": "^9.10.1",
     "dotenv": "^16.4.7",
     "nodemon": "^3.1.9",
-    "telegraf": "^4.16.3"
+    "telegraf": "^4.16.3",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.14"
