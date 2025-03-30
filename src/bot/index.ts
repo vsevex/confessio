@@ -2,6 +2,8 @@ import { Telegraf } from "telegraf";
 
 import unmatchedHandler from "./handlers/unmatched";
 import SentryService from "../sentry";
+import composer from "./composer";
+import commands from "./commands";
 
 interface Config {
   information: {
@@ -31,7 +33,8 @@ class BotService {
    * Initialize and start the bot
    */
   async init(): Promise<Telegraf> {
-    this.bot.use(unmatchedHandler);
+    this.bot.use(unmatchedHandler, composer);
+    this.bot.telegram.setMyCommands(commands.myCommands);
 
     await this.bot.telegram.deleteWebhook({
       drop_pending_updates: !!this.config.botDropPendingUpdates,
