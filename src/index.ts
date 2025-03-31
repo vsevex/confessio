@@ -35,6 +35,10 @@ async function main(): Promise<void> {
         token: config.botInfo.token,
         username: config.botInfo.username!,
       },
+      redis: {
+        host: config.REDIS_HOST,
+        port: config.REDIS_PORT,
+      },
       botDropPendingUpdates: config.BOT_DROP_PENDING_UPDATES,
     },
     logger,
