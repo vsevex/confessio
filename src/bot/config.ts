@@ -5,6 +5,8 @@ const {
   BOT_USERNAME,
   SENTRY_URL,
   BOT_DROP_PENDING_UPDATES,
+  REDIS_HOST,
+  REDIS_PORT,
   NODE_ENV = "development",
 } = environment as { [key: string]: any | undefined };
 
@@ -21,6 +23,8 @@ export default {
   NODE_ENV,
   botInfo,
   SENTRY_URL,
+  REDIS_HOST,
+  REDIS_PORT,
   BOT_DROP_PENDING_UPDATES,
   ...environment,
 };
