@@ -1,14 +1,19 @@
-import { Telegraf } from "telegraf";
+import { Context, Scenes, session, Telegraf } from "telegraf";
+import { Redis } from "@telegraf/session/redis";
 
 import unmatchedHandler from "./handlers/unmatched";
 import SentryService from "../sentry";
-import composer from "./composer";
 import commands from "./commands";
+import { SessionContext, SessionData } from "../session";
 
 interface Config {
   information: {
     token: string;
     username: string;
+  };
+  redis: {
+    host: string;
+    port: number;
   };
   botDropPendingUpdates?: boolean;
 }
@@ -19,22 +24,53 @@ interface LogService {
 }
 
 class BotService {
-  private bot: Telegraf;
+  private bot: Telegraf<SessionContext>;
 
   constructor(
     private config: Config,
     private logService: LogService,
     private sentryService: SentryService
   ) {
-    this.bot = new Telegraf(config.information.token);
+    this.bot = new Telegraf<SessionContext>(config.information.token);
   }
 
   /**
    * Initialize and start the bot
    */
-  async init(): Promise<Telegraf> {
-    this.bot.use(unmatchedHandler, composer);
+  async init(): Promise<Telegraf<SessionContext>> {
+    const store = Redis<SessionData>({
+      url: `redis://${this.config.redis.host}:${this.config.redis.port}`,
+    });
+
+    const sess = session({
+      store,
+      defaultSession: (_) => ({
+        awaitingConfession: false,
+        confession: null,
+        __scenes: { submissionSession: 0 },
+      }),
+    });
+
+    const stage = new Scenes.Stage([commands.submissionScene], { ttl: 10 });
+
+    this.bot.use();
+    this.bot.use(unmatchedHandler, sess, stage.middleware());
+
+    this.bot.start(commands.startCommand);
+
+    this.bot.hears(commands.helpRegex, commands.helpCommand);
+    this.bot.command(commands.helpRegex, commands.helpCommand);
+    this.bot.action(commands.helpRegex, commands.helpCommand);
+
+    this.bot.hears(commands.infoRegex, commands.infoCommand);
+    this.bot.command(commands.infoRegex, commands.infoCommand);
+    this.bot.action(commands.infoRegex, commands.infoCommand);
+
     this.bot.telegram.setMyCommands(commands.myCommands);
+
+    this.bot.command(commands.submitRegex, (ctx) =>
+      ctx.scene.enter("SUBMISSION_SCENE")
+    );
 
     await this.bot.telegram.deleteWebhook({
       drop_pending_updates: !!this.config.botDropPendingUpdates,
