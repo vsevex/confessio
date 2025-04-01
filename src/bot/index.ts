@@ -1,10 +1,10 @@
-import { Context, Scenes, session, Telegraf } from "telegraf";
+import { session, Telegraf } from "telegraf";
 import { Redis } from "@telegraf/session/redis";
 
-import unmatchedHandler from "./handlers/unmatched";
 import SentryService from "../sentry";
 import commands from "./commands";
 import { SessionContext, SessionData } from "../session";
+import { stage } from "./scenes";
 
 interface Config {
   information: {
@@ -44,18 +44,21 @@ class BotService {
 
     const sess = session({
       store,
-      defaultSession: (_) => ({
-        awaitingConfession: false,
-        confession: null,
-        __scenes: { submissionSession: 0 },
-      }),
     });
 
-    const stage = new Scenes.Stage([commands.submissionScene], { ttl: 10 });
-
-    this.bot.use();
-    this.bot.use(unmatchedHandler, sess, stage.middleware());
-
+    this.bot.use((ctx, next) => {
+      ctx.session ??= {
+        confession: null,
+        youHavePendingConfession: false,
+        confessionVisibility: "anonymous",
+      };
+      ctx.session.__scenes = {
+        publishedConfession: false,
+        pendingConfirmation: false,
+      };
+      return next();
+    });
+    this.bot.use(sess, stage.middleware());
     this.bot.start(commands.startCommand);
 
     this.bot.hears(commands.helpRegex, commands.helpCommand);
@@ -69,7 +72,7 @@ class BotService {
     this.bot.telegram.setMyCommands(commands.myCommands);
 
     this.bot.command(commands.submitRegex, (ctx) =>
-      ctx.scene.enter("SUBMISSION_SCENE")
+      ctx.scene.enter("submission")
     );
 
     await this.bot.telegram.deleteWebhook({
