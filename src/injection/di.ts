@@ -10,10 +10,10 @@ interface DiContainer {
 /**
  * DI Container
  */
-export default (): DiContainer => {
-  const dependencies: Record<string, any> = {};
-  const factories: Record<string, (...args: any[]) => any> = {};
+const dependencies: Record<string, any> = {};
+const factories: Record<string, (...args: any[]) => any> = {};
 
+export default (): DiContainer => {
   const diContainer: DiContainer = {
     /**
      * Register dependency
