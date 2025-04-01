@@ -1,7 +1,6 @@
 import startCommand from "./start";
 import helpCommand from "./help";
 import infoCommand from "./info";
-import submissionScene from "./submit";
 
 const submitRegex = /^(submit|confess)$/i;
 const helpRegex = /^(whelp|help)$/i;
@@ -24,5 +23,4 @@ export default {
   infoCommand,
   myCommands,
   submitRegex,
-  submissionScene,
 };
