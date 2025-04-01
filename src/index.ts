@@ -11,6 +11,7 @@ import LogService from "./log";
 import DiContainer from "./injection";
 import SentryService from "./sentry";
 import BotService from "./bot";
+import FirestoreController from "./controllers/firestore";
 
 var logger: winston.Logger;
 var sentry: SentryService;
@@ -21,8 +22,9 @@ const di = DiContainer();
 async function main(): Promise<void> {
   di.register("config", config);
   logger = LogService("info", { isDev: config.NODE_ENV === "development" });
-  di.register("logService", logger);
+  di.register("logger", logger);
   di.register("sentryUrl", config.SENTRY_URL);
+  di.register("firestoreController", new FirestoreController(logger));
   sentry = new SentryService(config.SENTRY_URL!, {
     nodeEnv: config.NODE_ENV,
     sentryTracesSampleRate: "1.0",
