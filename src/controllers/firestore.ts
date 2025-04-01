@@ -1,6 +1,5 @@
 import { initialize, db } from "./config";
 import { Confession } from "../models/confession";
-import { Timestamp } from "firebase-admin/firestore";
 import { v4 as uuidv4 } from "uuid";
 
 import * as winston from "winston";
@@ -20,7 +19,6 @@ class FirestoreController {
       const docRef = await db.collection("confessions").add({
         ...data,
         id: confessionId,
-        createdAt: Timestamp.fromDate(data.created_at),
       });
       this.logger.info(
         "Confession created with document ID: ",
