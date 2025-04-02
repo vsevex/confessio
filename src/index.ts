@@ -12,6 +12,7 @@ import DiContainer from "./injection";
 import SentryService from "./sentry";
 import BotService from "./bot";
 import FirestoreController from "./controllers/firestore";
+import TaskController from "./controllers/task";
 
 var logger: winston.Logger;
 var sentry: SentryService;
@@ -25,11 +26,17 @@ async function main(): Promise<void> {
   di.register("logger", logger);
   di.register("sentryUrl", config.SENTRY_URL);
   di.register("firestoreController", new FirestoreController(logger));
+  const taskController = new TaskController(
+    logger,
+    config.REDIS_HOST,
+    config.REDIS_PORT
+  );
   sentry = new SentryService(config.SENTRY_URL!, {
     nodeEnv: config.NODE_ENV,
     sentryTracesSampleRate: "1.0",
   });
   di.register("sentryService", sentry);
+  di.register("taskController", taskController);
 
   bot = new BotService(
     {
