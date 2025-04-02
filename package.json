@@ -14,6 +14,7 @@
     "@sentry/node": "^9.10.1",
     "@telegraf/session": "^2.0.0-beta.7",
     "@vlad-yakovlev/telegram-md": "^2.0.0",
+    "bull": "^4.16.5",
     "dotenv": "^16.4.7",
     "firebase-admin": "^13.2.0",
     "nodemon": "^3.1.9",
