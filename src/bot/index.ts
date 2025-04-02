@@ -75,6 +75,10 @@ class BotService {
       ctx.scene.enter("submission")
     );
 
+    this.bot.command(commands.myConfessionsRegex, (ctx) =>
+      ctx.scene.enter("my_submissions")
+    );
+
     await this.bot.telegram.deleteWebhook({
       drop_pending_updates: !!this.config.botDropPendingUpdates,
     });
