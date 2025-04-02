@@ -11,6 +11,7 @@ function initialize() {
   });
 
   db = getFirestore();
+  db.settings({ ignoreUndefinedProperties: true });
 }
 
 export { initialize, db };
