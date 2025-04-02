@@ -1,3 +1,7 @@
+import {
+  fetchMyConfessionsHandler,
+  deleteConfessionHandler,
+} from "../handlers/mysubmissions";
 import submissionHandler from "../handlers/submission";
 import { Markup, Scenes } from "telegraf";
 import { SessionContext } from "../../session";
@@ -67,7 +71,7 @@ submissionScene.action("edit", async (ctx) => {
 submissionScene.action("submit", enter<SessionContext>("visibility"));
 submissionScene.on("message", (ctx) => {
   const text = ctx.text;
-  if ((text?.length ?? 0) < 3) {
+  if ((text?.length ?? 0) < 100) {
     return ctx.reply(
       "Your confession is too short, make it at least 100 characters long."
     );
@@ -144,9 +148,10 @@ confirmationScene.action("edit", async (ctx) => {
 
 confirmationScene.leave(async (ctx) => {
   if (ctx.session?.__scenes?.publishedConfession) {
+    const confession = ctx.session?.confession;
     await submissionHandler(
       ctx,
-      ctx.session?.confession,
+      confession,
       ctx.session?.confessionVisibility === "anonymous"
     );
     ctx.session!.confession = null;
@@ -160,4 +165,51 @@ Your confession will be published in ${md.bold("30 minutes")}.
   }
 });
 
-export default [submissionScene, visibilityScene, confirmationScene];
+const mySubmissionsScene = new Scenes.BaseScene<SessionContext>(
+  "my_submissions"
+);
+
+mySubmissionsScene.enter(async (ctx) => {
+  const confessions = await fetchMyConfessionsHandler(ctx);
+
+  const confessionButtons = confessions?.map((confession, index) => {
+    mySubmissionsScene.action(`confession_${index + 1}`, (ctx) =>
+      ctx.reply(
+        confession.text,
+        confession.is_published
+          ? undefined
+          : Markup.inlineKeyboard([
+              Markup.button.callback("Cancel publish", `cancel`),
+            ])
+      )
+    );
+
+    mySubmissionsScene.action("cancel", async (ctx) => {
+      await deleteConfessionHandler(confession.ref_id!);
+
+      return ctx.reply("✅ Confession cancelled successfully!");
+    });
+
+    return Markup.button.callback(confession.text, `confession_${index + 1}`);
+  });
+
+  return ctx.replyWithMarkdownV2(
+    md.build(
+      confessions?.length === 0
+        ? md`
+📭 ${md.bold("No confessions found!")}
+          `
+        : md`
+Your confessions:
+          `
+    ),
+    Markup.inlineKeyboard(confessionButtons ?? [], { columns: 1 })
+  );
+});
+
+export default [
+  submissionScene,
+  visibilityScene,
+  confirmationScene,
+  mySubmissionsScene,
+];
