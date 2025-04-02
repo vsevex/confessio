@@ -78,19 +78,16 @@ export default (
     transports: [],
   });
 
-  if (config.isDev) {
-    main.add(
-      new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.colorize(),
-          winston.format.simple()
-        ),
-      })
-    );
-  } else {
-    main.add(combinedTransport);
-    main.add(errorTransport);
-  }
+  main.add(combinedTransport);
+  main.add(errorTransport);
+  main.add(
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      ),
+    })
+  );
 
   return main;
 };
