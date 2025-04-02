@@ -29,7 +29,7 @@ export default class TaskController {
       const orderId = uuidv4();
       await taskQueue.add(
         { orderId: orderId, customerId: customerId, refId: refId },
-        { delay: 1000, attempts: 3 }
+        { delay: 30 * 60 * 1000, attempts: 3 }
       );
       this.logger.info("Task added to Redis queue: ", orderId);
       return orderId;
